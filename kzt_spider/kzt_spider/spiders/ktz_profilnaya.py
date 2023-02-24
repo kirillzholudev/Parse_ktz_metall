@@ -10,7 +10,7 @@ class KtzSpider(scrapy.Spider):
         super().__init__(*args, **kwargs)
         self.excel = openpyxl.Workbook()
         self.sheet = self.excel.active
-        self.sheet.append(['Продукт', 'Длина', 'Вес за погонный метр', 'Марка стали', 'Цена'])
+        self.sheet.append(['Раздел', 'Продукт', 'Длина', 'Вес за погонный метр', 'Марка стали', 'Цена'])
 
     def parse(self, response, **kwargs):
 
@@ -21,18 +21,22 @@ class KtzSpider(scrapy.Spider):
             next_page = f'https://www.ktzholding.com/catalog/truba-profilnaya/?PAGEN_2={i}'
             yield response.follow(next_page, callback=self.parse)
 
+        for i in range(1, 9):
+            next_page = f'https://www.ktzholding.com/catalog/truba/?PAGEN_2={i}'
+            yield response.follow(next_page, callback=self.parse)
 
 
     def parse_product(self, response):
 
         product_name = response.css('h1.bx-title::text').get()
+        product_type = response.css('ul.list_breadcumbs ::text')[2].get()
         product_price = response.css('dl.product-item-detail-properties dd::text')[7].get().split(' ')[92]
         product_model = response.css('dl.product-item-detail-properties dd::text')[4].get().split(' ')[92]
         product_weight = response.css('dl.product-item-detail-properties dd::text')[6].get().split(' ')[92]
         product_length = response.css('dl.product-item-detail-properties dd::text')[2].get().split(' ')[92]
 
         if product_name and product_price:
-            self.sheet.append([product_name, product_length, product_weight, product_model, product_price])
+            self.sheet.append([product_type, product_name, product_length, product_weight, product_model, product_price])
 
     def closed(self, reason):
-        self.excel.save('kzt_profilnaya.xlsx')
+        self.excel.save('kzt_total.xlsx')
